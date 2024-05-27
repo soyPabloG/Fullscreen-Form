@@ -1,0 +1,14 @@
+;; shadow-cljs configuration
+{:dev-http
+ {8000 "public"}
+
+ :source-paths
+ ["src/main"]
+
+ :dependencies
+ [[reagent "1.2.0"]]
+
+ :builds
+ {:app {:target     :browser
+        :modules    {:main {:init-fn core/init}}
+        :output-dir "public/js"}}}
