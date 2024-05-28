@@ -63,6 +63,12 @@
        first))
 
 
+(defn progress
+  [form-fields current-field]
+  [(count form-fields)
+   (count (take-while #(not= % current-field) form-fields))])
+
+
 (defn move-forward!
   [state current-field]
   (let [current-value (get @state @current-field)]
@@ -86,6 +92,16 @@
         (callback-fn)))))
 
 
+(defn progress-bar
+  [form-fields state current-field]
+  (let [total-fields  (count form-fields)
+        filled-fields (-> @state
+                          (select-keys (remove #(= % @current-field) form-fields))
+                          count)]
+    [:div {:class "fs-progress"
+           :style {:width (str (/ (* 100 filled-fields) total-fields) "%")}}]))
+
+
 (defn form
   []
   (r/with-let [current-field    (r/atom :name)
@@ -94,20 +110,22 @@
                _                (.addEventListener js/document "keydown" keydown-callback)]
     (let [input-data (assoc (get form-data @current-field) :key @current-field)
           next-field (next-field form-fields @current-field)]
-      [:form {:class "fs-form"}
-       [:div {:class "fs-fields"}
-        [input state input-data]]
-       [:div {:class "fs-controls"}
-        [:button {:type     :reset
-                  :on-click (fn [e]
-                              (.preventDefault e)
-                              (reset-form! state current-field))}
-         "Cancel"]
-        [:button {:type     :button
-                  :disabled (nil? next-field)
-                  :on-click (fn [_]
-                              (move-forward! state current-field))}
-         "Continue"]]])
+      [:<>
+       [progress-bar form-fields state current-field]
+       [:form {:class "fs-form"}
+        [:div {:class "fs-fields"}
+         [input state input-data]]
+        [:div {:class "fs-controls"}
+         [:button {:type     :reset
+                   :on-click (fn [e]
+                               (.preventDefault e)
+                               (reset-form! state current-field))}
+          "Cancel"]
+         [:button {:type     :button
+                   :disabled (nil? next-field)
+                   :on-click (fn [_]
+                               (move-forward! state current-field))}
+          "Continue"]]]])
     (finally
       (.removeEventListener js/document "keydown" keydown-callback))))
 

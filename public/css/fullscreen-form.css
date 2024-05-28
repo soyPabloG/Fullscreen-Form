@@ -9,6 +9,17 @@ body {
    font-family: 'Red Hat Display', sans-serif;
 }
 
+.fs-progress {
+    background: #FAB440;
+
+    position: fixed;
+    top: 0;
+
+    width: 0%;
+    height: 0.5em;
+    transition: width 0.3s ease-in-out;
+}
+
 .fs-form {
     background: #07143F;
     font-size: 2.5em;
