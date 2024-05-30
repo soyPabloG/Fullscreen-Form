@@ -3,7 +3,9 @@
    [clojure.string :as str]
    ["react-dom/client" :refer [createRoot]]
    [goog.dom :as gdom]
-   [reagent.core :as r]))
+   [reagent.core :as r]
+   ["react-transition-group" :refer [CSSTransition SwitchTransition]]
+   ["react" :as react]))
 
 
 (def form-data
@@ -36,23 +38,44 @@
 
 (defn input
   [state {:keys [key type label placeholder data-info error]}]
-  (fn [state {:keys [key type label placeholder data-info error]}]
+  (let [label-ref (react/useRef)
+        input-ref (react/useRef)]
     [:<>
-     [:label {:for       key
-              :data-info data-info}
-      label]
-     [:input (merge
-              {:key         key
-               :type        type
-               :value       (get @state key)
-               :on-change   (fn [e]
-                              (swap! state dissoc :error)
-                              (swap! state assoc key (-> e .-target .-value)))
-               :placeholder placeholder
-               :auto-focus  true
-               :error       (when (get @state :error) "true")}
-              (when error
-                {:error :true}))]]));
+     [:> SwitchTransition
+      [:> CSSTransition
+       {:key              key
+        :class-names      :fs-anim-upper
+        :node-ref         label-ref
+        :add-end-listener (fn [done]
+                            (-> label-ref .-current (.addEventListener "transitionend" done false)))}
+       [:label {:for       key
+                :data-info data-info
+                :ref       (fn [el]
+                             (set! (.-current label-ref) el))}
+        label]]]
+     [:> SwitchTransition
+      [:> CSSTransition
+       {:key              key
+        :class-names      :fs-anim-lower
+        :node-ref         input-ref
+        :add-end-listener (fn [done]
+                            (-> input-ref .-current (.addEventListener "transitionend" done false)))}
+       [:div {:class "fs-input" ;; TODO: Remove this div
+              :ref   (fn [el]
+                       (set! (.-current input-ref) el))}
+        [:input (merge
+                 {:key         key
+                  :type        type
+                  :value       (get @state key)
+                  :on-change   (fn [e]
+                                 (swap! state dissoc :error)
+                                 (swap! state assoc key (-> e .-target .-value))
+                                 (r/flush))
+                  :placeholder placeholder
+                  :auto-focus  true
+                  :error       (when (get @state :error) "true")}
+                 (when error
+                   {:error :true}))]]]]]));
 
 
 (defn next-field
@@ -114,7 +137,7 @@
        [progress-bar form-fields state current-field]
        [:form {:class "fs-form"}
         [:div {:class "fs-fields"}
-         [input state input-data]]
+         [:f> input state input-data]]
         [:div {:class "fs-controls"}
          [:button {:type     :reset
                    :on-click (fn [e]

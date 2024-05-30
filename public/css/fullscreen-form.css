@@ -45,6 +45,7 @@ body {
     color: #FAB440;
     /* In order to just show `data-info` when you hover info icon */
     pointer-events: none;
+    will-change: opacity, transform;
 }
 
 .fs-fields label[data-info]::before {
@@ -82,6 +83,10 @@ body {
 
     cursor: pointer;
     pointer-events: auto;
+}
+
+.fs-input {
+    will-change: opacity, transform;
 }
 
 .fs-fields input {
@@ -139,4 +144,54 @@ body {
 .fs-controls button[disabled] {
     opacity: 0.4;
     pointer-events: none;
+}
+
+
+.fs-anim-upper-enter {
+    opacity: 0;
+    transform: translateY(450px);
+}
+
+.fs-anim-upper-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.5s, transform 0.5s;
+    transition-timing-function: cubic-bezier(0.7,0,0.3,1);
+}
+
+.fs-anim-upper-exit {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.fs-anim-upper-exit-active {
+    opacity: 0;
+    transform: translateY(-500px);
+    transition: opacity 0.5s, transform 0.5s;
+    transition-timing-function: cubic-bezier(0.7,0,0.3,1);
+}
+
+.fs-anim-lower-enter {
+    opacity: 0;
+    transform: translateY(450px);
+}
+
+.fs-anim-lower-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.5s, transform 0.5s;
+    transition-timing-function: cubic-bezier(0.7,0,0.3,1);
+}
+
+.fs-anim-lower-exit {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.fs-anim-lower-exit-active {
+    opacity: 0;
+    transform: translateY(-500px);
+    transition: opacity 0.5s, transform 0.5s;
+    transition-timing-function: cubic-bezier(0.7,0,0.3,1);
+    transition-delay: 0.1s;
 }
