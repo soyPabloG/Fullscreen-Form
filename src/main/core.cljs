@@ -36,46 +36,63 @@
   [:name :email :address :horror-story :people :emergency-contact])
 
 
+(defn deref-or-value
+  "Takes a value or an atom
+  If it's a value, returns it
+  If it's an object that supports IDeref, returns the value inside it by derefing
+  "
+  [val-or-atom]
+  (if (satisfies? IDeref val-or-atom)
+    @val-or-atom
+    val-or-atom))
+
+
 (defn input
-  [state {:keys [key type label placeholder data-info error]}]
+  [{:keys [field-name type placeholder value on-change error]}]
+  ;; (println "input re-render")
+  [:input (merge
+           {:key         field-name
+            :type        type
+            :value       (deref-or-value value)
+            :on-change   on-change
+            :placeholder placeholder
+            :auto-focus  true}
+           (when (deref-or-value error)
+             {:error :true}))])
+
+
+(defn input-field
+  [{:keys [field-name type label placeholder value on-change data-info error] :as props}]
   (let [label-ref (react/useRef)
         input-ref (react/useRef)]
     [:<>
      [:> SwitchTransition
       [:> CSSTransition
-       {:key              key
+       {:key              field-name
         :class-names      :fs-anim-upper
         :node-ref         label-ref
         :add-end-listener (fn [done]
+                            ;; (println "label-end-listenter" done)
                             (-> label-ref .-current (.addEventListener "transitionend" done false)))}
-       [:label {:for       key
+       [:label {:for       field-name
                 :data-info data-info
                 :ref       (fn [el]
+                             ;; (println "label-ref" el)
                              (set! (.-current label-ref) el))}
         label]]]
      [:> SwitchTransition
       [:> CSSTransition
-       {:key              key
+       {:key              field-name
         :class-names      :fs-anim-lower
         :node-ref         input-ref
         :add-end-listener (fn [done]
+                            ;; (println "input-end-listenter" done)
                             (-> input-ref .-current (.addEventListener "transitionend" done false)))}
        [:div {:class "fs-input" ;; TODO: Remove this div
               :ref   (fn [el]
+                       ;; (println "input-ref" el)
                        (set! (.-current input-ref) el))}
-        [:input (merge
-                 {:key         key
-                  :type        type
-                  :value       (get @state key)
-                  :on-change   (fn [e]
-                                 (swap! state dissoc :error)
-                                 (swap! state assoc key (-> e .-target .-value))
-                                 (r/flush))
-                  :placeholder placeholder
-                  :auto-focus  true
-                  :error       (when (get @state :error) "true")}
-                 (when error
-                   {:error :true}))]]]]]));
+        [input (select-keys props [:field-name :type :placeholder :value :on-change :error])]]]]]))
 
 
 (defn next-field
@@ -93,17 +110,17 @@
 
 
 (defn move-forward!
-  [state current-field]
-  (let [current-value (get @state @current-field)]
+  [state]
+  (let [current-field (get-in @state [:ui :current-field])
+        current-value (get-in @state [:data current-field :value])]
     (if (empty? (str current-value))
-      (swap! state assoc :error true)
-      (swap! current-field #(next-field form-fields %)))))
+      (swap! state assoc-in [:data current-field :error] true)
+      (swap! state assoc-in [:ui :current-field] (next-field form-fields current-field)))))
 
 
 (defn reset-form!
-  [state current-field]
-  (reset! current-field :name)
-  (reset! state {}))
+  [state]
+  (reset! state {:ui {:current-field :name}}))
 
 
 (defn keydown-handler-fn
@@ -119,7 +136,8 @@
   [form-fields state current-field]
   (let [total-fields  (count form-fields)
         filled-fields (-> @state
-                          (select-keys (remove #(= % @current-field) form-fields))
+                          :data
+                          (select-keys (remove #(= % current-field) form-fields))
                           count)]
     [:div {:class "fs-progress"
            :style {:width (str (/ (* 100 filled-fields) total-fields) "%")}}]))
@@ -127,27 +145,34 @@
 
 (defn form
   []
-  (r/with-let [current-field    (r/atom :name)
-               state            (r/atom {})
-               keydown-callback (keydown-handler-fn #(move-forward! state current-field))
+  (r/with-let [state            (r/atom {:ui {:current-field :name}})
+               current-field    (r/cursor state [:ui :current-field])
+               keydown-callback (keydown-handler-fn #(move-forward! state))
                _                (.addEventListener js/document "keydown" keydown-callback)]
-    (let [input-data (assoc (get form-data @current-field) :key @current-field)
+    ;; (println "form re-render")
+    (let [input-data (assoc (get form-data @current-field)
+                            :field-name @current-field
+                            :value (r/cursor state [:data @current-field :value])
+                            :on-change (fn [e]
+                                         (swap! state assoc-in [:data @current-field] {:value (-> e .-target .-value)})
+                                         (r/flush))
+                            :error (r/cursor state [:data @current-field :error]))
           next-field (next-field form-fields @current-field)]
       [:<>
-       [progress-bar form-fields state current-field]
+       [progress-bar form-fields state @current-field]
        [:form {:class "fs-form"}
         [:div {:class "fs-fields"}
-         [:f> input state input-data]]
+         [:f> input-field input-data]]
         [:div {:class "fs-controls"}
          [:button {:type     :reset
                    :on-click (fn [e]
                                (.preventDefault e)
-                               (reset-form! state current-field))}
+                               (reset-form! state))}
           "Cancel"]
          [:button {:type     :button
                    :disabled (nil? next-field)
                    :on-click (fn [_]
-                               (move-forward! state current-field))}
+                               (move-forward! state))}
           "Continue"]]]])
     (finally
       (.removeEventListener js/document "keydown" keydown-callback))))
