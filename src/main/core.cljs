@@ -49,7 +49,6 @@
 
 (defn input
   [{:keys [field-name type placeholder value on-change error]}]
-  ;; (println "input re-render")
   [:input (merge
            {:key         field-name
             :type        type
@@ -72,12 +71,10 @@
         :class-names      :fs-anim-upper
         :node-ref         label-ref
         :add-end-listener (fn [done]
-                            ;; (println "label-end-listenter" done)
                             (-> label-ref .-current (.addEventListener "transitionend" done false)))}
        [:label {:for       field-name
                 :data-info data-info
                 :ref       (fn [el]
-                             ;; (println "label-ref" el)
                              (set! (.-current label-ref) el))}
         label]]]
      [:> SwitchTransition
@@ -86,11 +83,9 @@
         :class-names      :fs-anim-lower
         :node-ref         input-ref
         :add-end-listener (fn [done]
-                            ;; (println "input-end-listenter" done)
                             (-> input-ref .-current (.addEventListener "transitionend" done false)))}
        [:div {:class "fs-input" ;; TODO: Remove this div
               :ref   (fn [el]
-                       ;; (println "input-ref" el)
                        (set! (.-current input-ref) el))}
         [input (select-keys props [:field-name :type :placeholder :value :on-change :error])]]]]]))
 
@@ -103,24 +98,23 @@
        first))
 
 
-(defn progress
-  [form-fields current-field]
-  [(count form-fields)
-   (count (take-while #(not= % current-field) form-fields))])
-
-
 (defn move-forward!
   [state]
   (let [current-field (get-in @state [:ui :current-field])
         current-value (get-in @state [:data current-field :value])]
     (if (empty? (str current-value))
       (swap! state assoc-in [:data current-field :error] true)
-      (swap! state assoc-in [:ui :current-field] (next-field form-fields current-field)))))
+      (let [new-state-fn (fn [current-state]
+                           (-> current-state
+                               (update-in [:ui :filled-fields] inc)
+                               (assoc-in [:ui :current-field] (next-field form-fields current-field))))]
+        (swap! state new-state-fn)))))
 
 
 (defn reset-form!
   [state]
-  (reset! state {:ui {:current-field :name}}))
+  (reset! state {:ui {:current-field :name
+                      :filled-fields 0}}))
 
 
 (defn keydown-handler-fn
@@ -133,23 +127,20 @@
 
 
 (defn progress-bar
-  [form-fields state current-field]
-  (let [total-fields  (count form-fields)
-        filled-fields (-> @state
-                          :data
-                          (select-keys (remove #(= % current-field) form-fields))
-                          count)]
-    [:div {:class "fs-progress"
-           :style {:width (str (/ (* 100 filled-fields) total-fields) "%")}}]))
+  [total-fields filled-fields]
+  [:div {:class "fs-progress"
+         :style {:width (str (/ (* 100 filled-fields) total-fields) "%")}}])
 
 
 (defn form
   []
-  (r/with-let [state            (r/atom {:ui {:current-field :name}})
+  (r/with-let [state            (r/atom {:ui {:current-field :name
+                                              :filled-fields 0}})
+               total-fields     (count form-fields)
                current-field    (r/cursor state [:ui :current-field])
+               filled-fields    (r/cursor state [:ui :filled-fields])
                keydown-callback (keydown-handler-fn #(move-forward! state))
                _                (.addEventListener js/document "keydown" keydown-callback)]
-    ;; (println "form re-render")
     (let [input-data (assoc (get form-data @current-field)
                             :field-name @current-field
                             :value (r/cursor state [:data @current-field :value])
@@ -159,7 +150,7 @@
                             :error (r/cursor state [:data @current-field :error]))
           next-field (next-field form-fields @current-field)]
       [:<>
-       [progress-bar form-fields state @current-field]
+       [progress-bar total-fields @filled-fields]
        [:form {:class "fs-form"}
         [:div {:class "fs-fields"}
          [:f> input-field input-data]]
