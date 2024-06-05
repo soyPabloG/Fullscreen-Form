@@ -1,11 +1,9 @@
 (ns core
   (:require
-   [clojure.string :as str]
-   ["react-dom/client" :refer [createRoot]]
+   [field :refer [input-field]]
    [goog.dom :as gdom]
    [reagent.core :as r]
-   ["react-transition-group" :refer [CSSTransition SwitchTransition]]
-   ["react" :as react]))
+   ["react-dom/client" :refer [createRoot]]))
 
 
 (def form-data
@@ -34,60 +32,6 @@
 
 (def form-fields
   [:name :email :address :horror-story :people :emergency-contact])
-
-
-(defn deref-or-value
-  "Takes a value or an atom
-  If it's a value, returns it
-  If it's an object that supports IDeref, returns the value inside it by derefing
-  "
-  [val-or-atom]
-  (if (satisfies? IDeref val-or-atom)
-    @val-or-atom
-    val-or-atom))
-
-
-(defn input
-  [{:keys [field-name type placeholder value on-change error]}]
-  [:input (merge
-           {:key         field-name
-            :type        type
-            :value       (deref-or-value value)
-            :on-change   on-change
-            :placeholder placeholder
-            :auto-focus  true}
-           (when (deref-or-value error)
-             {:error :true}))])
-
-
-(defn input-field
-  [{:keys [field-name type label placeholder value on-change data-info error] :as props}]
-  (let [label-ref (react/useRef)
-        input-ref (react/useRef)]
-    [:<>
-     [:> SwitchTransition
-      [:> CSSTransition
-       {:key              field-name
-        :class-names      :fs-anim-upper
-        :node-ref         label-ref
-        :add-end-listener (fn [done]
-                            (-> label-ref .-current (.addEventListener "transitionend" done false)))}
-       [:label {:for       field-name
-                :data-info data-info
-                :ref       (fn [el]
-                             (set! (.-current label-ref) el))}
-        label]]]
-     [:> SwitchTransition
-      [:> CSSTransition
-       {:key              field-name
-        :class-names      :fs-anim-lower
-        :node-ref         input-ref
-        :add-end-listener (fn [done]
-                            (-> input-ref .-current (.addEventListener "transitionend" done false)))}
-       [:div {:class "fs-input" ;; TODO: Remove this div
-              :ref   (fn [el]
-                       (set! (.-current input-ref) el))}
-        [input (select-keys props [:field-name :type :placeholder :value :on-change :error])]]]]]))
 
 
 (defn next-field
@@ -153,7 +97,7 @@
        [progress-bar total-fields @filled-fields]
        [:form {:class "fs-form"}
         [:div {:class "fs-fields"}
-         [:f> input-field input-data]]
+         [input-field input-data]]
         [:div {:class "fs-controls"}
          [:button {:type     :reset
                    :on-click (fn [e]
