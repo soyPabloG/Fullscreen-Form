@@ -16,9 +16,9 @@
 
 
 (defn- native-input
-  [{:keys [field-name type placeholder value on-change error]}]
+  [{:keys [name type placeholder value on-change error]}]
   [:input (merge
-           {:key         field-name
+           {:key         name
             :type        type
             :value       (deref-or-value value)
             :on-change   on-change
@@ -28,12 +28,27 @@
              {:error :true}))])
 
 
+(defn- native-textarea
+  [{:keys [name placeholder value on-change error]}]
+  [:textarea (merge
+              {:key         name
+               :value       (deref-or-value value)
+               :on-change   on-change
+               :placeholder placeholder
+               :auto-focus  true}
+              (when (deref-or-value error)
+                {:error :true}))])
+
+
 (defn- input
-  [{:keys [field-name _type _placeholder _value _on-change _error] :as props}]
-  (let [ref (react/useRef)]
+  [{:keys [name type _placeholder _value _on-change _error] :as props}]
+  (let [ref             (react/useRef)
+        input-component (case type
+                          :textarea native-textarea
+                          native-input)]
     [:> SwitchTransition
      [:> CSSTransition
-      {:key              field-name
+      {:key              name
        :class-names      :fs-anim-lower
        :node-ref         ref
        :add-end-listener (fn [done]
@@ -41,28 +56,28 @@
       [:div {:class "fs-input" ;; TODO: Remove this div
              :ref   (fn [el]
                       (set! (.-current ref) el))}
-       [native-input props]]]]))
+       [input-component props]]]]))
 
 
 (defn- label
-  [{:keys [field-name label data-info]}]
+  [{:keys [name label data-info]}]
   (let [ref (react/useRef)]
     [:> SwitchTransition
      [:> CSSTransition
-      {:key              field-name
+      {:key              name
        :class-names      :fs-anim-upper
        :node-ref         ref
        :add-end-listener (fn [done]
                            (-> ref .-current (.addEventListener "transitionend" done false)))}
-      [:label {:for       field-name
+      [:label {:for       name
                :data-info data-info
                :ref       (fn [el]
                             (set! (.-current ref) el))}
        label]]]))
 
 
-(defn input-field
-  [{:keys [_field-name _type _label _placeholder _value _on-change _data-info _error] :as props}]
+(defn field
+  [{:keys [_name _type _label _placeholder _value _on-change _data-info _error] :as props}]
   [:<>
-   [:f> label (select-keys props [:field-name :label :data-info])]
-   [:f> input (select-keys props [:field-name :type :placeholder :value :on-change :error])]])
+   [:f> label (select-keys props [:name :label :data-info])]
+   [:f> input (select-keys props [:name :type :placeholder :value :on-change :error])]])

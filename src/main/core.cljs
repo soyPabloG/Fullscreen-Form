@@ -1,8 +1,9 @@
 (ns core
   (:require
-   [field :refer [input-field]]
+   [field :refer [field]]
    [goog.dom :as gdom]
    [reagent.core :as r]
+   [clojure.string :as str]
    ["react-dom/client" :refer [createRoot]]))
 
 
@@ -18,7 +19,7 @@
                        :label       "What's your home address?"
                        :placeholder "1313 Mockingbird Lane, Spooksville, HA 1234"
                        :data-info   "Relax, is just for sending out trick-or-treat goodies 🍬"}
-   :horror-story      {:type        :text
+   :horror-story      {:type        :textarea
                        :label       "What is the eeriest thing that has ever happened to you on Halloween night?"
                        :placeholder "Saw a ghost, mysterious knock on the door, black cat followed me home, or something really scary..."}
    :people            {:type        :number
@@ -64,10 +65,11 @@
 (defn keydown-handler-fn
   [callback-fn]
   (fn [e]
-    (let [key-code (or (.-keyCode e) (.-which e))]
-      (when (= key-code 13)
-        (.preventDefault e)
-        (callback-fn)))))
+    (when-not (-> e .-target .-tagName str/lower-case (= "textarea"))
+      (let [key-code (or (.-keyCode e) (.-which e))]
+        (when (= key-code 13)
+          (.preventDefault e)
+          (callback-fn))))))
 
 
 (defn progress-bar
@@ -85,19 +87,20 @@
                filled-fields    (r/cursor state [:ui :filled-fields])
                keydown-callback (keydown-handler-fn #(move-forward! state))
                _                (.addEventListener js/document "keydown" keydown-callback)]
-    (let [input-data (assoc (get form-data @current-field)
-                            :field-name @current-field
-                            :value (r/cursor state [:data @current-field :value])
-                            :on-change (fn [e]
-                                         (swap! state assoc-in [:data @current-field] {:value (-> e .-target .-value)})
-                                         (r/flush))
-                            :error (r/cursor state [:data @current-field :error]))
+    (let [input-data (assoc
+                      (get form-data @current-field)
+                      :name @current-field
+                      :value (r/cursor state [:data @current-field :value])
+                      :on-change (fn [e]
+                                   (swap! state assoc-in [:data @current-field] {:value (-> e .-target .-value)})
+                                   (r/flush))
+                      :error (r/cursor state [:data @current-field :error]))
           next-field (next-field form-fields @current-field)]
       [:<>
        [progress-bar total-fields @filled-fields]
        [:form {:class "fs-form"}
         [:div {:class "fs-fields"}
-         [input-field input-data]]
+         [field input-data]]
         [:div {:class "fs-controls"}
          [:button {:type     :reset
                    :on-click (fn [e]
