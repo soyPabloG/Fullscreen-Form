@@ -145,6 +145,77 @@ body {
     opacity: 0.3;
 }
 
+.fs-fields .fs-icon-radio-group {
+    display: flex;
+    gap: 0.8em;
+}
+
+.fs-fields .fs-icon-radio-group span {
+    padding: 10px;
+    max-width: 200px;
+    width: 100%;
+    text-align: center;
+    font-size: 0.45em;
+}
+
+.fs-fields .fs-icon-radio-group input[type="radio"] {
+    position: fixed;
+    opacity: 0;
+    width: 0;
+}
+
+
+.fs-fields .fs-icon-radio-group label {
+    display: block;
+    padding: 100% 0 0 0;
+    width: 100%;
+    color: rgba(78,71,198,0.8);
+    transition: color 0.3s;
+    pointer-events: auto;
+    cursor: pointer;
+
+    /*
+      Hack to set background image dinamically :)
+
+      data-* cannot be used somewhere else than content:
+      https://developer.mozilla.org/en-US/docs/Web/CSS/attr#color_value
+
+      So we set background-image to label and then we inherit it to ::before.
+      In order to hide the background image from label, we set background-size to 0.
+      https://stackoverflow.com/a/22816200
+    */
+    background-size: 0;
+}
+
+.fs-fields .fs-icon-radio-group label::before {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    background-size: 100%;
+    background-repeat: no-repeat;
+    content: '';
+    opacity: 0.5;
+    transition: opacity 0.3s;
+    transform: translate(-50%,-50%);
+
+    background-image: inherit;
+}
+
+.fs-fields .fs-icon-radio-group label:hover::before,
+.fs-fields .fs-icon-radio-group input[type="radio"]:checked + label::before {
+    opacity: 1;
+}
+
+.fs-fields .fs-icon-radio-group input[type="radio"]:hover + label {
+    color: rgba(78,71,198,1);
+}
+
+.fs-fields .fs-icon-radio-group input[type="radio"]:checked + label {
+    color: #FAB440;
+}
+
 .fs-controls {
     padding: 0 10% 10% 10%;
 

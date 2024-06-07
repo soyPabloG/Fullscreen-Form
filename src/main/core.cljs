@@ -22,6 +22,20 @@
    :horror-story      {:type        :textarea
                        :label       "What is the eeriest thing that has ever happened to you on Halloween night?"
                        :placeholder "Saw a ghost, mysterious knock on the door, black cat followed me home, or something really scary..."}
+   :arriving          {:type    :icon-radio
+                       :label   "How are you arriving?"
+                       :options [{:label     "Regular Human Vehicle"
+                                  :image-url "../images/car.png"
+                                  :value     :vehicle}
+                                 {:label     "Rolling down the street"
+                                  :image-url "../images/robot.png"
+                                  :value     :walking}
+                                 {:label     "Witches' Coven Shuttle"
+                                  :image-url "../images/truck.png"
+                                  :value     :bus}
+                                 {:label     "Invisible Rocket"
+                                  :image-url "../images/rocket.png"
+                                  :value     :other}]}
    :people            {:type        :number
                        :max         5
                        :label       "How many any ghoulish friends or family members are you bringing?"
@@ -32,7 +46,7 @@
                        :data-info   "Just in case you get too scared!"}})
 
 (def form-fields
-  [:name :email :address :horror-story :people :emergency-contact])
+  [:name :email :address :horror-story :arriving :people :emergency-contact])
 
 
 (defn next-field

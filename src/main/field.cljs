@@ -40,11 +40,41 @@
                 {:error :true}))])
 
 
+(defn- icon-radio
+  [{:keys [id name label value image-url checked? on-change]}]
+  [:span {:class "fs-icon-radio"}
+   [:input {:id        id
+            :name      name
+            :type      :radio
+            :value     value
+            :checked   checked?
+            :on-change on-change}]
+   [:label {:for   id
+            :style {:background-image (str "url(" image-url ")")}}
+    label]])
+
+
+(defn- icon-radio-group
+  [{:keys [name value options on-change]}]
+  [:div {:class "fs-icon-radio-group"}
+   (for [{:keys [label value image-url]} options]
+     (let [id (str name "-" value)]
+       ^{:key id}
+       [icon-radio {:id        id
+                    :name      name
+                    :label     label
+                    :value     value
+                    :image-url image-url
+                    :checked?  (= value (deref-or-value value))
+                    :on-change on-change}]))])
+
+
 (defn- input
   [{:keys [name type _placeholder _value _on-change _error] :as props}]
   (let [ref             (react/useRef)
         input-component (case type
-                          :textarea native-textarea
+                          :textarea   native-textarea
+                          :icon-radio icon-radio-group
                           native-input)]
     [:> SwitchTransition
      [:> CSSTransition
@@ -80,4 +110,4 @@
   [{:keys [_name _type _label _placeholder _value _on-change _data-info _error] :as props}]
   [:<>
    [:f> label (select-keys props [:name :label :data-info])]
-   [:f> input (select-keys props [:name :type :placeholder :value :on-change :error])]])
+   [:f> input (select-keys props [:name :type :placeholder :value :options :on-change :error])]])
