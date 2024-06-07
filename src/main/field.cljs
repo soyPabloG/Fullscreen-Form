@@ -1,46 +1,54 @@
 (ns field
   (:require
+   [reagent.core :as r]
    ["react-transition-group" :refer [CSSTransition SwitchTransition]]
    ["react" :as react]))
 
 
-(defn deref-or-value
-  "Takes a value or an atom
-  If it's a value, returns it
-  If it's an object that supports IDeref, returns the value inside it by derefing
-  "
-  [val-or-atom]
-  (if (satisfies? IDeref val-or-atom)
-    @val-or-atom
-    val-or-atom))
-
-
 (defn- native-input
-  [{:keys [name type placeholder value on-change error]}]
-  [:input (merge
-           {:key         name
-            :type        type
-            :value       (deref-or-value value)
-            :on-change   on-change
-            :placeholder placeholder
-            :auto-focus  true}
-           (when (deref-or-value error)
-             {:error :true}))])
+  [{:keys [name type placeholder cursor value on-change error]}]
+  (let [cursor-props (when cursor
+                       (merge
+                        {:value     (:value @cursor)
+                         :on-change (fn [e]
+                                      (reset! cursor {:value (-> e .-target .-value)})
+                                      (r/flush))}
+                        (when (:error @cursor)
+                          {:error :true})))]
+    [:input (merge
+             {:key         name
+              :type        type
+              :value       value
+              :on-change   on-change
+              :placeholder placeholder
+              :auto-focus  true}
+             (when error
+               {:error :true})
+             cursor-props)]))
 
 
 (defn- native-textarea
-  [{:keys [name placeholder value on-change error]}]
-  [:textarea (merge
-              {:key         name
-               :value       (deref-or-value value)
-               :on-change   on-change
-               :placeholder placeholder
-               :auto-focus  true}
-              (when (deref-or-value error)
-                {:error :true}))])
+  [{:keys [name placeholder cursor value on-change error]}]
+  (let [cursor-props (when cursor
+                       (merge
+                        {:value     (:value @cursor)
+                         :on-change (fn [e]
+                                      (reset! cursor {:value (-> e .-target .-value)})
+                                      (r/flush))}
+                        (when (:error @cursor)
+                          {:error :true})))]
+    [:textarea (merge
+                {:key         name
+                 :value       value
+                 :on-change   on-change
+                 :placeholder placeholder
+                 :auto-focus  true}
+                (when error
+                  {:error :true})
+                cursor-props)]))
 
 
-(defn- icon-radio
+(defn- icon-radio-button
   [{:keys [id name label value image-url checked? on-change]}]
   [:span {:class "fs-icon-radio"}
    [:input {:id        id
@@ -55,22 +63,33 @@
 
 
 (defn- icon-radio-group
-  [{:keys [name value options on-change]}]
+  [{name           :name
+    cursor         :cursor
+    selected-value :value
+    options        :options
+    on-change      :on-change}]
   [:div {:class "fs-icon-radio-group"}
-   (for [{:keys [label value image-url]} options]
-     (let [id (str name "-" value)]
-       ^{:key id}
-       [icon-radio {:id        id
-                    :name      name
-                    :label     label
-                    :value     value
-                    :image-url image-url
-                    :checked?  (= value (deref-or-value value))
-                    :on-change on-change}]))])
+   (doall
+    (for [{:keys [label value image-url]} options]
+      (let [id           (str name "-" value)
+            cursor-props (when cursor
+                           {:checked?  (= value (:value @cursor))
+                            :on-change (fn [e]
+                                         (reset! cursor {:value (keyword (-> e .-target .-value))}))})]
+        ^{:key id}
+        [icon-radio-button (merge
+                            {:id        id
+                             :name      name
+                             :label     label
+                             :value     value
+                             :image-url image-url
+                             :checked?  (= value selected-value)
+                             :on-change on-change}
+                            cursor-props)])))])
 
 
 (defn- input
-  [{:keys [name type _placeholder _value _on-change _error] :as props}]
+  [{:keys [name type _cursor _placeholder _value _on-change _error] :as props}]
   (let [ref             (react/useRef)
         input-component (case type
                           :textarea   native-textarea
@@ -107,7 +126,7 @@
 
 
 (defn field
-  [{:keys [_name _type _label _placeholder _value _on-change _data-info _error] :as props}]
+  [{:keys [_name _type _cursor _label _placeholder _value _on-change _data-info _error] :as props}]
   [:<>
    [:f> label (select-keys props [:name :label :data-info])]
-   [:f> input (select-keys props [:name :type :placeholder :value :options :on-change :error])]])
+   [:f> input (select-keys props [:name :type :cursor :placeholder :value :options :on-change :error])]])

@@ -104,11 +104,7 @@
     (let [input-data (assoc
                       (get form-data @current-field)
                       :name @current-field
-                      :value (r/cursor state [:data @current-field :value])
-                      :on-change (fn [e]
-                                   (swap! state assoc-in [:data @current-field] {:value (-> e .-target .-value)})
-                                   (r/flush))
-                      :error (r/cursor state [:data @current-field :error]))
+                      :cursor (r/cursor state [:data @current-field]))
           next-field (next-field form-fields @current-field)]
       [:<>
        [progress-bar total-fields @filled-fields]
