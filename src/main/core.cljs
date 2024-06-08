@@ -41,8 +41,8 @@
                           :options [{:label "None" :value :none}
                                     {:label "Vegetarian" :value :vegetarian}
                                     {:label "Vegan" :value :vegan}
-                                    {:label "Gluten-free" :value :gluten_free}
-                                    {:label "Nut allergy" :value :nut_allergy}]}
+                                    {:label "Gluten-free" :value :gluten-free}
+                                    {:label "Nut allergy" :value :nut-allergy}]}
    :people               {:type        :number
                           :max         5
                           :label       "How many any ghoulish friends or family members are you bringing?"
