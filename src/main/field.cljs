@@ -88,12 +88,51 @@
                             cursor-props)])))])
 
 
+(defn- radio-button
+  [{:keys [id name label value checked? on-change]}]
+  [:span {:class "fs-icon-radio"}
+   [:input {:id        id
+            :name      name
+            :type      :radio
+            :value     value
+            :checked   checked?
+            :on-change on-change}]
+   [:label {:for   id}
+    label]])
+
+
+(defn- radio-group
+  [{name           :name
+    cursor         :cursor
+    selected-value :value
+    options        :options
+    on-change      :on-change}]
+  [:div {:class "fs-radio-group"}
+   (doall
+    (for [{:keys [label value]} options]
+      (let [id           (str name "-" value)
+            cursor-props (when cursor
+                           {:checked?  (= value (:value @cursor))
+                            :on-change (fn [e]
+                                         (reset! cursor {:value (keyword (-> e .-target .-value))}))})]
+        ^{:key id}
+        [radio-button (merge
+                            {:id        id
+                             :name      name
+                             :label     label
+                             :value     value
+                             :checked?  (= value selected-value)
+                             :on-change on-change}
+                            cursor-props)])))])
+
+
 (defn- input
   [{:keys [name type _cursor _placeholder _value _on-change _error] :as props}]
   (let [ref             (react/useRef)
         input-component (case type
                           :textarea   native-textarea
                           :icon-radio icon-radio-group
+                          :radio      radio-group
                           native-input)]
     [:> SwitchTransition
      [:> CSSTransition
